@@ -35,10 +35,13 @@
   let availableModels = [];
   let activeStreamInfo = null;
   let sessionsData = null;
+  let followStreamScroll = true;
+  let suppressScrollTracking = false;
   const feedbackUrl = 'https://github.com/chenyme/grok2api/issues/new';
   const STORAGE_KEY = 'grok2api_chat_sessions';
   const SIDEBAR_STATE_KEY = 'grok2api_chat_sidebar_collapsed';
   const MAX_CONTEXT_MESSAGES = 30;
+  const AUTO_SCROLL_THRESHOLD = 48;
   const DEFAULT_SESSION_TITLES = ['新会话', 'New Session'];
   const SEND_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"></path><path d="M22 2L15 22L11 13L2 9L22 2Z"></path></svg>';
   const STOP_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"></rect></svg>';
@@ -449,15 +452,34 @@
     }
   }
 
-  function scrollToBottom() {
+  function getScrollContainer() {
     const body = document.scrollingElement || document.documentElement;
-    if (!body) return;
+    if (!body) return null;
     const hasOwnScroll = chatLog && chatLog.scrollHeight > chatLog.clientHeight + 1;
-    if (hasOwnScroll) {
-      chatLog.scrollTop = chatLog.scrollHeight;
-      return;
-    }
-    body.scrollTop = body.scrollHeight;
+    return hasOwnScroll ? chatLog : body;
+  }
+
+  function isNearScrollBottom() {
+    const container = getScrollContainer();
+    if (!container) return true;
+    const remaining = container.scrollHeight - (container.scrollTop + container.clientHeight);
+    return remaining <= AUTO_SCROLL_THRESHOLD;
+  }
+
+  function updateFollowStreamScroll() {
+    followStreamScroll = isNearScrollBottom();
+  }
+
+  function scrollToBottom(force = false) {
+    const container = getScrollContainer();
+    if (!container) return;
+    if (!force && isSending && !followStreamScroll) return;
+    suppressScrollTracking = true;
+    container.scrollTop = container.scrollHeight;
+    requestAnimationFrame(() => {
+      suppressScrollTracking = false;
+      updateFollowStreamScroll();
+    });
   }
 
   function hideEmptyState() {
@@ -916,7 +938,7 @@
     row.appendChild(bubble);
 
     chatLog.appendChild(row);
-    scrollToBottom();
+    scrollToBottom(true);
     const entry = {
       row,
       contentNode,
@@ -962,7 +984,7 @@
     entry.contentNode.classList.add('rendered', 'user-rendered');
     entry.contentNode.innerHTML = parts.join('');
     bindMessageImagePreview(entry.contentNode);
-    scrollToBottom();
+    scrollToBottom(true);
   }
 
   function applyImageGrid(root) {
@@ -1647,6 +1669,7 @@
     const assistantEntry = createMessage('assistant', '');
     setSendingState(true);
     setStatus('connecting', '发送中');
+    followStreamScroll = true;
 
     abortController = new AbortController();
     const payload = buildPayloadFrom(historySlice);
@@ -1735,6 +1758,7 @@
     const assistantEntry = createMessage('assistant', '');
     setSendingState(true);
     setStatus('connecting', '发送中');
+    followStreamScroll = true;
 
     abortController = new AbortController();
     const payload = buildPayload();
@@ -2091,6 +2115,15 @@
         event.preventDefault();
       });
     }
+
+    const handleScrollTracking = () => {
+      if (suppressScrollTracking) return;
+      updateFollowStreamScroll();
+    };
+    if (chatLog) {
+      chatLog.addEventListener('scroll', handleScrollTracking, { passive: true });
+    }
+    window.addEventListener('scroll', handleScrollTracking, { passive: true });
   }
 
   updateRangeValues();
