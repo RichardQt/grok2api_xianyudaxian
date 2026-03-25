@@ -593,13 +593,16 @@
     if (!spliceBtn) return;
     const iconExtend = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>';
     const iconStop = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14"/></svg>';
+    spliceBtn.classList.remove('is-running', 'is-stopping');
     if (state === 'running') {
       spliceBtn.disabled = false;
+      spliceBtn.classList.add('is-running');
       spliceBtn.innerHTML = `${iconStop}<span>中止延长</span>`;
       return;
     }
     if (state === 'stopping') {
       spliceBtn.disabled = true;
+      spliceBtn.classList.add('is-stopping');
       spliceBtn.innerHTML = `${iconStop}<span>中止中...</span>`;
       return;
     }
@@ -3815,9 +3818,8 @@
       if (playIcon) playIcon.style.display = running ? 'none' : '';
       if (stopIcon) stopIcon.style.display = running ? '' : 'none';
       if (label) label.textContent = running ? '停止' : '开始生成';
-      // 切换样式：running 时改为 outline 风格
       mobileStart.className = running
-        ? 'geist-button-outline mobile-action-btn gap-2'
+        ? 'geist-button mobile-action-btn gap-2 is-stop'
         : 'geist-button mobile-action-btn gap-2';
       mobileStart.disabled = !running && Boolean(startBtn && startBtn.disabled);
     }
@@ -3849,9 +3851,9 @@
     function syncSpliceBtnState() {
       if (!mobileSplice || !spliceBtn) return;
       mobileSplice.disabled = spliceBtn.disabled;
-      const span = spliceBtn.querySelector('span');
-      const mSpan = mobileSplice.querySelector('span');
-      if (span && mSpan) mSpan.textContent = span.textContent;
+      mobileSplice.classList.toggle('is-running', spliceBtn.classList.contains('is-running'));
+      mobileSplice.classList.toggle('is-stopping', spliceBtn.classList.contains('is-stopping'));
+      mobileSplice.innerHTML = spliceBtn.innerHTML;
     }
     if (spliceBtn) {
       new MutationObserver(syncSpliceBtnState)

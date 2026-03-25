@@ -1913,6 +1913,17 @@
     const wbUseId      = document.getElementById('wbUseIdBtn');
     const wbReset      = document.getElementById('wbResetBtn');
     const wbClearHist  = document.getElementById('wbClearHistoryBtn');
+    const playIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    const stopIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14"/></svg>';
+
+    function syncStickySubmitState() {
+      if (!wbSubmit || !submitEditBtn) return;
+      const running = submitEditBtn.dataset.running === '1' || submitEditBtn.classList.contains('is-editing');
+      wbSubmit.disabled = submitEditBtn.disabled;
+      wbSubmit.classList.toggle('is-editing', running);
+      wbSubmit.setAttribute('aria-busy', running ? 'true' : 'false');
+      wbSubmit.innerHTML = `${running ? stopIcon : playIcon}${running ? '中止' : '执行编辑'}`;
+    }
 
     // 图标按钮代理原始按钮 click
     if (wbAddRef && selectSeedBtn) {
@@ -1935,12 +1946,17 @@
       });
 
       // 初始化状态
-      wbSubmit.disabled = submitEditBtn.disabled;
+      syncStickySubmitState();
 
-      // 实时同步 disabled
+      // 实时同步状态
       new MutationObserver(() => {
-        wbSubmit.disabled = submitEditBtn.disabled;
-      }).observe(submitEditBtn, { attributes: true, attributeFilter: ['disabled'] });
+        syncStickySubmitState();
+      }).observe(submitEditBtn, {
+        attributes: true,
+        attributeFilter: ['disabled', 'class', 'data-running'],
+        childList: true,
+        subtree: true
+      });
     }
   }
 
