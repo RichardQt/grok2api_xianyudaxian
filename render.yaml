@@ -12,9 +12,13 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: SERVER_STORAGE_TYPE
-        value: local
+        value: redis
       - key: SERVER_STORAGE_URL
-        value: ""
+        value: rediss://default:Ad-5AAIncDEzOGIwOGUwYzRmNzY0OTlhOTljZDVhYjI1ODc4MTY3N3AxNTcyNzM@brave-flea-57273.upstash.io:6379/0
+      - key: PUBLIC_ENABLED
+        value: "true"
+      - key: PUBLIC_KEY
+        value: "your-random-key-here-change-this"
       - key: SERVER_HOST
         value: 0.0.0.0
       - key: SERVER_PORT
