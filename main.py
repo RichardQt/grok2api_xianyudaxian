@@ -174,6 +174,11 @@ def create_app() -> FastAPI:
     app.include_router(public_router, prefix="/v1/public")
     app.include_router(pages_router)
 
+    # 健康检查
+    @app.get("/healthy")
+    async def healthy():
+        return {"status": "ok"}
+
     return app
 
 
