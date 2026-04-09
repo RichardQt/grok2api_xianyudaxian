@@ -19,7 +19,7 @@ services:
       - key: PUBLIC_ENABLED
         value: "true"
       - key: PUBLIC_KEY
-        value: "your-random-key-here-change-this"
+        value: "sk-123456"
       - key: SERVER_HOST
         value: 0.0.0.0
       - key: SERVER_PORT
