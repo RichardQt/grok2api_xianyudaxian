@@ -316,16 +316,11 @@ class ImageGenerationService:
 
             results = await asyncio.gather(*tasks, return_exceptions=True)
             added_in_round = 0
-            filtered_png = 0
-
             for batch in results:
                 if isinstance(batch, Exception):
                     logger.warning(f"WS batch failed: {batch}")
                     continue
                 for img in batch:
-                    if self._is_blocked_png_image(img):
-                        filtered_png += 1
-                        continue
                     if img not in seen:
                         seen.add(img)
                         all_images.append(img)
@@ -339,16 +334,10 @@ class ImageGenerationService:
                 "WS collect round: "
                 f"{round_idx}/{max_collect_rounds}, "
                 f"target={n}, collected={len(all_images)}, "
-                f"added={added_in_round}, filtered_png={filtered_png}"
+                f"added={added_in_round}"
             )
 
             if len(all_images) >= n:
-                break
-            if added_in_round == 0 and filtered_png > 0 and round_idx >= 3:
-                logger.warning(
-                    "WS collect appears blocked by png-only results, stop early: "
-                    f"target={n}, collected={len(all_images)}"
-                )
                 break
 
         try:
@@ -366,19 +355,6 @@ class ImageGenerationService:
         return ImageGenerationResult(
             stream=False, data=selected, usage_override=usage_override
         )
-
-    @staticmethod
-    def _is_blocked_png_image(image: str) -> bool:
-        value = str(image or "").strip().lower()
-        if not value:
-            return True
-        if value.startswith("data:image/png;base64,"):
-            return True
-        if value.startswith("ivborw0kggo"):
-            return True
-        if ".png" in value:
-            return True
-        return False
 
     @staticmethod
     def _get_effort(model_info: Any) -> EffortType:
